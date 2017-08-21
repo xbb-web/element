@@ -2,6 +2,7 @@ import Pager from './pager.vue';
 import ElSelect from 'element-ui/packages/select';
 import ElOption from 'element-ui/packages/option';
 import Locale from 'element-ui/src/mixins/locale';
+import { valueEquals } from 'element-ui/src/utils/util';
 
 export default {
   name: 'ElPagination',
@@ -134,8 +135,8 @@ export default {
       watch: {
         pageSizes: {
           immediate: true,
-          handler(value) {
-            if (Array.isArray(value)) {
+          handler(value, oldValue) {
+            if (Array.isArray(value) && !valueEquals(value, oldValue)) {
               this.$parent.internalPageSize = value.indexOf(this.$parent.pageSize) > -1
                 ? this.$parent.pageSize
                 : this.pageSizes[0];
@@ -173,6 +174,7 @@ export default {
         handleChange(val) {
           if (val !== this.$parent.internalPageSize) {
             this.$parent.internalPageSize = val = parseInt(val, 10);
+            this.$parent.userChangePageSize = true;
             this.$parent.$emit('size-change', val);
           }
         }
@@ -201,6 +203,7 @@ export default {
         },
         handleChange({ target }) {
           this.$parent.internalCurrentPage = this.$parent.getValidCurrentPage(target.value);
+          this.$parent.emitChange();
           this.oldValue = null;
         }
       },
@@ -244,16 +247,19 @@ export default {
   methods: {
     handleCurrentChange(val) {
       this.internalCurrentPage = this.getValidCurrentPage(val);
+      this.emitChange();
     },
 
     prev() {
       const newVal = this.internalCurrentPage - 1;
       this.internalCurrentPage = this.getValidCurrentPage(newVal);
+      this.emitChange();
     },
 
     next() {
       const newVal = this.internalCurrentPage + 1;
       this.internalCurrentPage = this.getValidCurrentPage(newVal);
+      this.emitChange();
     },
 
     getValidCurrentPage(value) {
@@ -279,6 +285,12 @@ export default {
       }
 
       return resetValue === undefined ? value : resetValue;
+    },
+
+    emitChange() {
+      this.$nextTick(() => {
+        this.$emit('current-change', this.internalCurrentPage);
+      });
     }
   },
 
@@ -319,16 +331,12 @@ export default {
       }
 
       if (newVal !== undefined) {
-        this.$nextTick(() => {
-          this.internalCurrentPage = newVal;
-          if (oldVal !== newVal) {
-            this.$emit('update:currentPage', newVal);
-            this.$emit('current-change', this.internalCurrentPage);
-          }
-        });
+        this.internalCurrentPage = newVal;
+        if (oldVal !== newVal) {
+          this.$emit('update:currentPage', newVal);
+        }
       } else {
         this.$emit('update:currentPage', newVal);
-        this.$emit('current-change', this.internalCurrentPage);
       }
     },
 
@@ -339,7 +347,9 @@ export default {
         this.internalCurrentPage = 1;
       } else if (oldPage > newVal) {
         this.internalCurrentPage = newVal === 0 ? 1 : newVal;
+        this.userChangePageSize && this.emitChange();
       }
+      this.userChangePageSize = false;
     }
   }
 };
