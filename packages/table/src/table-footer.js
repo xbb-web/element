@@ -59,11 +59,19 @@ export default {
                   colspan={ column.colSpan }
                   rowspan={ column.rowSpan }
                   class={ [column.id, column.headerAlign, column.className || '', this.isCellHidden(cellIndex, this.columns) ? 'is-hidden' : '', !column.children ? 'is-leaf' : '', column.labelClassName] }>
-                  <div class={ ['cell', column.labelClassName] }>
+                  {/* <div class={ ['cell', column.labelClassName] }>
                     {
                       this.summaryMethod ? this.summaryMethod({ columns: this.columns, data: this.store.states.data })[cellIndex] : sums[cellIndex]
                     }
-                  </div>
+                  </div> */}
+                  {/* 默认的summaryMethod没有tooltips */}
+                  <el-tooltip effect={ this.table.tooltipEffect } placement="top" ref="tooltip" content={ this.summaryMethod ? this.summaryMethod({ columns: this.columns, data: this.store.states.data })[cellIndex] : sums[cellIndex] }>
+                    <div class={ ['cell', column.labelClassName] }>
+                      {
+                        this.summaryMethod ? this.summaryMethod({ columns: this.columns, data: this.store.states.data })[cellIndex] : sums[cellIndex]
+                      }
+                    </div>
+                  </el-tooltip>
                 </td>
               )
             }
